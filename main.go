@@ -18,6 +18,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var dao = Data{}
+
 var client *mongo.Client
 
 type Data struct { //used to save in db
@@ -121,7 +123,13 @@ func GETallPlanetsFromMongoDB(response http.ResponseWriter, request *http.Reques
 }
 
 func DELETEplanetFromMongoDB(response http.ResponseWriter, request *http.Request) {
-
+	response.Header().Set("content-type", "application/json")
+	params := mux.Vars(request)
+	id, _ := primitive.ObjectIDFromHex(params["id"])
+	filter := bson.M{"_id": id}
+	collection := client.Database("starwars").Collection("planets")
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	collection.DeleteOne(ctx, filter)
 }
 
 func GETPlanetByIdFromMongoDB(response http.ResponseWriter, request *http.Request) {
@@ -137,6 +145,6 @@ func main() {
 	router.HandleFunc("/planet/{id}", DELETEplanetFromMongoDB).Methods("DELETE")
 	router.HandleFunc("/planet/{id}", GETPlanetByIdFromMongoDB).Methods("GET")
 	router.HandleFunc("/planet", GETallPlanetsFromMongoDB).Methods("GET")
-	http.ListenAndServe(":12345", router)
 	fmt.Println("Started")
+	http.ListenAndServe(":12345", router)
 }
